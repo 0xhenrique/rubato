@@ -7,5 +7,6 @@ pkgs.mkShell {
     pkg-config
     gnumake
     binutils
+    python315
   ];
 }

@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rubato</title>
+  <script src="https://unpkg.com/tone"></script>
+  <script src="https://unpkg.com/@tonejs/midi"></script>
   <style>
     * {
       margin: 0;
@@ -85,6 +87,11 @@
       background-color: #fabd2f;
     }
 
+    button:disabled {
+      background-color: #665c54;
+      cursor: not-allowed;
+    }
+
     .status {
       margin-top: 16px;
       padding: 12px;
@@ -98,6 +105,67 @@
     .status.visible {
       display: block;
     }
+
+    .status.error {
+      color: #fb4934;
+    }
+
+    .status.success {
+      color: #b8bb26;
+    }
+
+    .player {
+      margin-top: 16px;
+      display: none;
+      gap: 8px;
+    }
+
+    .player.visible {
+      display: flex;
+    }
+
+    .player button {
+      flex: 1;
+    }
+
+    .player button.stop {
+      background-color: #cc241d;
+    }
+
+    .player button.stop:hover {
+      background-color: #fb4934;
+    }
+
+    .divider {
+      border-top: 1px solid #504945;
+      margin: 24px 0;
+    }
+
+    .test-section label {
+      color: #83a598;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #504945;
+      border: 1px dashed #665c54;
+      border-radius: 4px;
+      color: #a89984;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    .file-label:hover {
+      border-color: #83a598;
+      color: #83a598;
+    }
   </style>
 </head>
 <body>
@@ -110,8 +178,22 @@
 
     <button id="generate">Generate</button>
 
-    <div class="status" id="status">
-      Waiting for backend...
+    <div class="status" id="status"></div>
+
+    <div class="player" id="player">
+      <button id="play">Play</button>
+      <button id="stop" class="stop">Stop</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="test-section">
+      <label>Test MIDI Playback</label>
+      <label class="file-label" for="midiFile">
+        Click to select a .mid file
+      </label>
+      <input type="file" id="midiFile" accept=".mid,.midi">
+      <button id="testPlay" disabled>Play Test File</button>
     </div>
   </div>
 
@@ -119,23 +201,113 @@
     const tagsInput = document.getElementById('tags');
     const generateBtn = document.getElementById('generate');
     const status = document.getElementById('status');
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play');
+    const stopBtn = document.getElementById('stop');
+    const midiFileInput = document.getElementById('midiFile');
+    const fileLabel = document.querySelector('.file-label');
+    const testPlayBtn = document.getElementById('testPlay');
+
+    let synth = null;
+    let currentMidi = null;
+    let scheduledEvents = [];
+
+    function showStatus(message, type = '') {
+      status.textContent = message;
+      status.className = 'status visible';
+      if (type) status.classList.add(type);
+    }
+
+    function stopPlayback() {
+      scheduledEvents.forEach(id => Tone.Transport.clear(id));
+      scheduledEvents = [];
+      Tone.Transport.stop();
+      Tone.Transport.position = 0;
+      if (synth) {
+        synth.releaseAll();
+      }
+    }
+
+    async function playMidi(midi) {
+      await Tone.start();
+      stopPlayback();
+
+      if (!synth) {
+        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+      }
+
+      const now = Tone.now();
+
+      midi.tracks.forEach(track => {
+        track.notes.forEach(note => {
+          const id = Tone.Transport.schedule(time => {
+            synth.triggerAttackRelease(
+              note.name,
+              note.duration,
+              time,
+              note.velocity
+            );
+          }, note.time);
+          scheduledEvents.push(id);
+        });
+      });
+
+      Tone.Transport.start();
+    }
 
     generateBtn.addEventListener('click', () => {
       const tags = tagsInput.value.trim();
 
       if (!tags) {
-        status.textContent = 'Please enter at least one tag';
-        status.classList.add('visible');
+        showStatus('Please enter at least one tag', 'error');
+        player.classList.remove('visible');
         return;
       }
 
-      status.textContent = `Requesting: "${tags}" (backend not connected)`;
-      status.classList.add('visible');
+      showStatus(`Requesting: "${tags}" (backend not connected)`);
+      player.classList.remove('visible');
     });
 
     tagsInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         generateBtn.click();
+      }
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (currentMidi) {
+        playMidi(currentMidi);
+        showStatus('Playing...', 'success');
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      stopPlayback();
+      showStatus('Stopped');
+    });
+
+    midiFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      fileLabel.textContent = file.name;
+      testPlayBtn.disabled = false;
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        currentMidi = new Midi(arrayBuffer);
+        showStatus(`Loaded: ${currentMidi.tracks.length} track(s)`, 'success');
+        player.classList.add('visible');
+      } catch (err) {
+        showStatus('Failed to parse MIDI file', 'error');
+        console.error(err);
+      }
+    });
+
+    testPlayBtn.addEventListener('click', () => {
+      if (currentMidi) {
+        playMidi(currentMidi);
+        showStatus('Playing test file...', 'success');
       }
     });
   </script>
