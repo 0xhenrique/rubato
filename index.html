@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rubato</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #282828;
+      color: #ebdbb2;
+      font-family: monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #d79921;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #a89984;
+      margin-bottom: 32px;
+    }
+
+    .container {
+      background-color: #3c3836;
+      padding: 32px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #b8bb26;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      background-color: #504945;
+      border: 1px solid #665c54;
+      border-radius: 4px;
+      color: #ebdbb2;
+      font-family: monospace;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #d79921;
+    }
+
+    input[type="text"]::placeholder {
+      color: #7c6f64;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #d79921;
+      border: none;
+      border-radius: 4px;
+      color: #282828;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #fabd2f;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #504945;
+      border-radius: 4px;
+      text-align: center;
+      color: #a89984;
+      display: none;
+    }
+
+    .status.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rubato</h1>
+  <p class="subtitle">AI-generated piano pieces</p>
+
+  <div class="container">
+    <label for="tags">Tags</label>
+    <input type="text" id="tags" placeholder="e.g. happy, slow, melancholic">
+
+    <button id="generate">Generate</button>
+
+    <div class="status" id="status">
+      Waiting for backend...
+    </div>
+  </div>
+
+  <script>
+    const tagsInput = document.getElementById('tags');
+    const generateBtn = document.getElementById('generate');
+    const status = document.getElementById('status');
+
+    generateBtn.addEventListener('click', () => {
+      const tags = tagsInput.value.trim();
+
+      if (!tags) {
+        status.textContent = 'Please enter at least one tag';
+        status.classList.add('visible');
+        return;
+      }
+
+      status.textContent = `Requesting: "${tags}" (backend not connected)`;
+      status.classList.add('visible');
+    });
+
+    tagsInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        generateBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>

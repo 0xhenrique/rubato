@@ -6,7 +6,6 @@ pkgs.mkShell {
     clang
     pkg-config
     gnumake
-    raylib
     binutils
   ];
 }
