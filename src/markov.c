@@ -1,5 +1,6 @@
 #include "markov.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 void markov_init(MarkovChain *chain) {
@@ -30,6 +31,26 @@ void markov_build_probs(MarkovChain *chain) {
         if (row_total > 0) {
             for (int to = 0; to < NUM_PITCHES; to++) {
                 chain->probs[from][to] = (float)chain->counts[from][to] / row_total;
+            }
+        }
+    }
+}
+
+void markov_generate(MarkovChain *chain, uint8_t start_pitch, uint8_t *output, int length) {
+    uint8_t current = start_pitch;
+
+    for (int i = 0; i < length; i++) {
+        output[i] = current;
+
+        // Pick next note based on probabilities
+        float r = (float)rand() / RAND_MAX;
+        float sum = 0;
+
+        for (int to = 0; to < NUM_PITCHES; to++) {
+            sum += chain->probs[current][to];
+            if (r <= sum) {
+                current = to;
+                break;
             }
         }
     }

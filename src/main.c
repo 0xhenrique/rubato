@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "midi.h"
 #include "markov.h"
 
@@ -21,13 +23,18 @@ int main(int argc, char *argv[]) {
     markov_train(&chain, &song);
     markov_build_probs(&chain);
 
-    // @TODO: this is just an example to show probabilities
-    int example_pitch = 67;
-    printf("After G4, what comes next?\n");
-    for (int to = 0; to < NUM_PITCHES; to++) {
-        if (chain.probs[example_pitch][to] > 0.01) { // only show >1%
-            printf("  -> pitch %3d : %.1f%%\n", to, chain.probs[example_pitch][to] * 100);
-        }
+    srand(time(NULL));
+
+    // Generate a sequence starting from the first note in the training data
+    uint8_t generated[32];
+    uint8_t start = song.notes[0].pitch;
+
+    markov_generate(&chain, start, generated, 32);
+
+    printf("Generated sequence (starting from pitch %d):\n", start);
+    for (int i = 0; i < 32; i++) {
+        printf("%3d ", generated[i]);
+        if ((i + 1) % 8 == 0) printf("\n");
     }
 
     return 0;

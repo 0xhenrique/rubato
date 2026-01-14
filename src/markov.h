@@ -15,6 +15,7 @@ typedef struct {
 void markov_init(MarkovChain *chain);
 void markov_train(MarkovChain *chain, Song *song);
 void markov_build_probs(MarkovChain *chain);
+void markov_generate(MarkovChain *chain, uint8_t start_pitch, uint8_t *output, int length);
 void markov_print_top(MarkovChain *chain, int n);
 
 #endif
