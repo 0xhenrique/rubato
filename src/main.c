@@ -37,5 +37,13 @@ int main(int argc, char *argv[]) {
         if ((i + 1) % 8 == 0) printf("\n");
     }
 
+    // Write to MIDI file
+    const char *output_file = "output/generated.mid";
+    if (midi_write(output_file, generated, 32) == 0) {
+        printf("\nWritten to %s\n", output_file);
+    } else {
+        printf("\nFailed to write %s\n", output_file);
+    }
+
     return 0;
 }

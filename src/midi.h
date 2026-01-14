@@ -19,5 +19,6 @@ typedef struct {
 } Song;
 
 int midi_parse(const char *filename, Song *song);
+int midi_write(const char *filename, uint8_t *pitches, int count);
 
 #endif

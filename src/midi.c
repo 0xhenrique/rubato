@@ -127,3 +127,72 @@ int midi_parse(const char *filename, Song *song) {
     fclose(f);
     return 0;
 }
+
+static void write16(FILE *f, uint16_t val) {
+    uint8_t buf[2] = { val >> 8, val & 0xFF };
+    fwrite(buf, 1, 2, f);
+}
+
+static void write32(FILE *f, uint32_t val) {
+    uint8_t buf[4] = { val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF };
+    fwrite(buf, 1, 4, f);
+}
+
+int midi_write(const char *filename, uint8_t *pitches, int count) {
+    FILE *f = fopen(filename, "wb");
+    if (!f) return -1;
+
+    uint16_t ticks_per_beat = 480;
+    uint16_t note_duration = 240;  // half a beat
+    uint8_t velocity = 100;
+
+    // Calculate track data size
+    // Each note: delta(1) + noteOn(3) + delta(1-2) + noteOff(3)
+    // Plus end of track: delta(1) + meta(3)
+    int track_size = 0;
+    for (int i = 0; i < count; i++) {
+        track_size += 1 + 3;  // delta 0 + note on
+        track_size += (note_duration < 128 ? 1 : 2) + 3;  // delta + note off
+    }
+    track_size += 4;  // end of track
+
+    // Header chunk
+    fwrite("MThd", 1, 4, f);
+    write32(f, 6);              // header length
+    write16(f, 0);              // format 0
+    write16(f, 1);              // 1 track
+    write16(f, ticks_per_beat);
+
+    // Track chunk
+    fwrite("MTrk", 1, 4, f);
+    write32(f, track_size);
+
+    // Write notes
+    for (int i = 0; i < count; i++) {
+        // Note On (delta = 0)
+        fputc(0x00, f);         // delta time
+        fputc(0x90, f);         // note on, channel 0
+        fputc(pitches[i], f);
+        fputc(velocity, f);
+
+        // Note Off (delta = duration)
+        if (note_duration < 128) {
+            fputc(note_duration, f);
+        } else {
+            fputc(0x81, f);     // variable length: 240 = 0x81 0x70
+            fputc(0x70, f);
+        }
+        fputc(0x80, f);         // note off, channel 0
+        fputc(pitches[i], f);
+        fputc(0, f);            // velocity
+    }
+
+    // End of track
+    fputc(0x00, f);
+    fputc(0xFF, f);
+    fputc(0x2F, f);
+    fputc(0x00, f);
+
+    fclose(f);
+    return 0;
+}
