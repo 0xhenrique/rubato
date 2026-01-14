@@ -4,6 +4,7 @@
 
 void markov_init(MarkovChain *chain) {
     memset(chain->counts, 0, sizeof(chain->counts));
+    memset(chain->probs, 0, sizeof(chain->probs));
     chain->total_transitions = 0;
 }
 
@@ -14,6 +15,23 @@ void markov_train(MarkovChain *chain, Song *song) {
         uint8_t to = song->notes[i + 1].pitch;
         chain->counts[from][to]++;
         chain->total_transitions++;
+    }
+}
+
+void markov_build_probs(MarkovChain *chain) {
+    for (int from = 0; from < NUM_PITCHES; from++) {
+        // Sum all counts for this row
+        int row_total = 0;
+        for (int to = 0; to < NUM_PITCHES; to++) {
+            row_total += chain->counts[from][to];
+        }
+
+        // Convert to probabilities
+        if (row_total > 0) {
+            for (int to = 0; to < NUM_PITCHES; to++) {
+                chain->probs[from][to] = (float)chain->counts[from][to] / row_total;
+            }
+        }
     }
 }
 

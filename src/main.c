@@ -19,7 +19,16 @@ int main(int argc, char *argv[]) {
     MarkovChain chain;
     markov_init(&chain);
     markov_train(&chain, &song);
-    markov_print_top(&chain, 15);
+    markov_build_probs(&chain);
+
+    // @TODO: this is just an example to show probabilities
+    int example_pitch = 67;
+    printf("After G4, what comes next?\n");
+    for (int to = 0; to < NUM_PITCHES; to++) {
+        if (chain.probs[example_pitch][to] > 0.01) { // only show >1%
+            printf("  -> pitch %3d : %.1f%%\n", to, chain.probs[example_pitch][to] * 100);
+        }
+    }
 
     return 0;
 }
