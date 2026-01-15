@@ -1,13 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "midi.h"
 #include "markov.h"
+#include "mood.h"
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <midi_file>\n", argv[0]);
+        printf("Usage: %s <midi_file> [--mood sad|happy|energetic]\n", argv[0]);
         return 1;
+    }
+
+    Mood mood = MOOD_NEUTRAL;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--mood") == 0 && i + 1 < argc) {
+            mood = mood_parse(argv[i + 1]);
+            i++;
+        }
     }
 
     Song song;
@@ -16,12 +26,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Parsed %d notes\n\n", song.count);
+    printf("Parsed %d notes\n", song.count);
+    if (mood != MOOD_NEUTRAL) {
+        const char *mood_names[] = {"neutral", "sad", "happy", "energetic"};
+        printf("Applying mood filter: %s\n", mood_names[mood]);
+    }
+    printf("\n");
 
     MarkovChain chain;
     markov_init(&chain);
     markov_train(&chain, &song);
     markov_build_probs(&chain);
+    mood_apply(&chain, mood);
 
     srand(time(NULL));
 
