@@ -136,7 +136,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Write to MIDI file
-    const char *output_file = "output/generated.mid";
+    char output_file[64];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(output_file, sizeof(output_file), "output/%Y%m%d_%H%M%S.mid", t);
+
     if (midi_write(output_file, generated, 32) == 0) {
         printf("\nWritten to %s\n", output_file);
     } else {
